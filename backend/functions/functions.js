@@ -24,4 +24,9 @@ const decryptingFunction = (passwordToCheck, salt, hash) => {
   return false;
 };
 
-module.exports = { encryptingFunction, decryptingFunction };
+//convert a file to base 64
+const convertToBase64 = (file) => {
+  return `data:${file.mimetype};base64,${file.data.toString("base64")}`;
+};
+
+module.exports = { encryptingFunction, decryptingFunction, convertToBase64 };
