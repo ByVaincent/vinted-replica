@@ -1,0 +1,122 @@
+const express = require("express");
+const router = express.Router();
+
+const User = require("../models/User");
+
+const uid2 = require("uid2/promises");
+const sha256 = require("crypto-js/sha256");
+const encBase64 = require("crypto-js/enc-base64");
+
+//encrypting function : return an object with hash and salt properties
+const encryptingFunction = async (passwordToEncrypt) => {
+  const salt = await uid2(16);
+
+  const hash = sha256(passwordToEncrypt + salt).toString(encBase64);
+
+  return { hash, salt };
+};
+
+//decrypting function, return true if match
+const decryptingFunction = (passwordToCheck, salt, hash) => {
+  const saltedPass = passwordToCheck + salt;
+
+  const encryptPassToCheck = sha256(saltedPass).toString(encBase64);
+
+  if (hash === encryptPassToCheck) {
+    return true;
+  }
+
+  return false;
+};
+
+//signup route
+router.post("/user/signup", async (req, res) => {
+  try {
+    //check the incoming datas
+    if (!req.body.email) {
+      throw { status: 400, message: "Please add a valid email" };
+    } else if (!req.body.username) {
+      throw { status: 400, message: "Please add a username" };
+    } else if (!req.body.password || req.body.password.length < 5) {
+      throw {
+        status: 400,
+        message: "Please add a valid password (> 4 characters",
+      };
+    }
+
+    //check if the mail is already used
+    if (await User.findOne({ email: req.body.email })) {
+      throw { status: 409, message: "This email is already used" };
+    }
+
+    //encrypt the incoming password
+    const newPassword = await encryptingFunction(req.body.password);
+
+    //generate the token
+    const newToken = await uid2(64);
+
+    const newUser = new User({
+      email: req.body.email,
+      account: {
+        username: req.body.username,
+      },
+      newsletter: req.body.newsletter,
+      token: newToken,
+      hash: newPassword.hash,
+      salt: newPassword.salt,
+    });
+
+    await newUser.save();
+
+    res.status(201).json({
+      message: "User succesfully created",
+      _id: newUser._id,
+      token: newUser.token,
+      account: newUser.account,
+    });
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json(error.message || "Internal server error");
+  }
+});
+
+//authentication route login
+router.post("/user/login", async (req, res) => {
+  try {
+    //check the incoming datas
+    if (!req.body.email || !req.body.password) {
+      throw { status: 400, message: "Please, add an email and a password" };
+    }
+
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      throw { status: 400, message: "Invalid email or password" };
+    }
+
+    //check if the password is good
+    const authorized = decryptingFunction(
+      req.body.password,
+      user.salt,
+      user.hash
+    );
+
+    if (!authorized) {
+      throw { status: 401, message: "Invalid email or password" };
+    }
+
+    res.json({
+      _id: user._id,
+      token: user.token,
+      account: {
+        username: user.account.username,
+      },
+    });
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json(error.message || "Internal server error");
+  }
+});
+module.exports = router;
