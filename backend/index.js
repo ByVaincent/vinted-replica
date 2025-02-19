@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
   res.json("Hi!");
 });
 
-app.use(userRoute);
+app.use(fileUpload(), userRoute);
 
 app.use(isAuthenticatedMiddl, fileUpload(), offerRoute);
 

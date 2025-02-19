@@ -1,6 +1,8 @@
 const User = require("../models/User");
 const uid2 = require("uid2");
+const cloudinary = require("cloudinary").v2;
 
+const convertToBase64 = require("../functions/functions").convertToBase64;
 const encryptingFunction = require("../functions/functions").encryptingFunction;
 const decryptingFunction = require("../functions/functions").decryptingFunction;
 
@@ -39,6 +41,17 @@ const signup = async (req, res) => {
       hash: newPassword.hash,
       salt: newPassword.salt,
     });
+
+    //upload de l'image
+    const uploadAvatar = await cloudinary.uploader.upload(
+      convertToBase64(req.files.picture),
+      { asset_folder: `/vinted/users/${newUser._id}` }
+    );
+
+    newUser.account.avatar = {
+      secure_url: uploadAvatar.secure_url,
+      public_id: uploadAvatar.public_id,
+    };
 
     await newUser.save();
 
