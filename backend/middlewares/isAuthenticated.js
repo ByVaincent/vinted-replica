@@ -2,6 +2,9 @@ const User = require("../models/User");
 
 const isAuthenticated = async (req, res, next) => {
   try {
+    if (!req.headers.authorization) {
+      throw { status: 401, message: "Unauthorized" };
+    }
     const incommingToken = req.headers.authorization.replace("Bearer ", "");
 
     if (!(await User.findOne({ token: incommingToken }))) {

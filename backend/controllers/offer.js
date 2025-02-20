@@ -65,6 +65,8 @@ const publishOffer = async (req, res) => {
 
 const updateOffer = async (req, res) => {
   try {
+    console.log(req.files);
+
     //check the datas
     if (req.body.title && req.body.title.length > 50) {
       throw {

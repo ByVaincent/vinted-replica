@@ -15,7 +15,6 @@ const offerRoute = require("./routes/offer");
 
 //middlewares import
 const isAuthenticatedMiddl = require("./middlewares/isAuthenticated");
-const fileUpload = require("express-fileupload");
 
 // cloudinary configuration
 cloudinary.config({
@@ -28,9 +27,9 @@ app.get("/", (req, res) => {
   res.json("Hi!");
 });
 
-app.use(fileUpload(), userRoute);
+app.use(userRoute);
 
-app.use(isAuthenticatedMiddl, fileUpload(), offerRoute);
+app.use(isAuthenticatedMiddl, offerRoute);
 
 app.all("*", (req, res) => {
   res.status(404).json("Not found!");
